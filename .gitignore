@@ -1,0 +1,44 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environment
+venv/
+env/
+*.venv
+
+# IDE and editor files
+.vscode/
+.idea/
+*.iml
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+
+# Environment variables
+.env
+*.env
+
+# Cache and temporary files
+*.cache
+*.bak
+
+# Python dependency files
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Output and generated files
+output/
+*.png
+
+
+node_modules/
+
+# Frontend folder
+playmat_builder_front_end/
