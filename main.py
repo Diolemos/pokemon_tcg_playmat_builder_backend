@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, Form
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import FileResponse
 from PIL import Image, ImageOps
 from fastapi.middleware.cors import CORSMiddleware
@@ -7,29 +7,24 @@ import uuid
 import os
 
 # Create the output directory if it doesn't exist
-OUTPUT_FOLDER = "output/"
+OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output/")
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-
+# Constants for playmat size (assuming 100 DPI)
+PLAYMAT_WIDTH = 2400  # 24 inches × 100 DPI
+PLAYMAT_HEIGHT = 1400  # 14 inches × 100 DPI
 
 app = FastAPI()
-
 
 if __name__ == "__main__":
     import uvicorn
     port = int(os.environ.get('PORT', 8000))  
     uvicorn.run(app, host="0.0.0.0", port=port)
-# Constants for playmat size (assuming 100 DPI)
-PLAYMAT_WIDTH = 2400  # 24 inches × 100 DPI
-PLAYMAT_HEIGHT = 1400  # 14 inches × 100 DPI
-OUTPUT_FOLDER = "output/"
 
 def resize_and_crop(image: Image.Image) -> Image.Image:
     """ Resizes and crops an image to fit the 24" × 14" playmat size """
-    # Convert to RGBA (to avoid transparency issues)
     image = image.convert("RGBA")
     
-    # Get original size
     original_width, original_height = image.size
     target_aspect = PLAYMAT_WIDTH / PLAYMAT_HEIGHT
     image_aspect = original_width / original_height
@@ -45,7 +40,6 @@ def resize_and_crop(image: Image.Image) -> Image.Image:
         offset = (original_height - new_height) // 2
         image = image.crop((0, offset, original_width, offset + new_height))
 
-       
     # Resize to exact playmat size
     return image.resize((PLAYMAT_WIDTH, PLAYMAT_HEIGHT), Image.LANCZOS)
 
@@ -57,28 +51,38 @@ async def upload_image(file: UploadFile = File(...), overlay: str = Form("white"
     :param overlay: "black" or "white" overlay template
     :return: Processed image file
     """
-    # Load user image
-    user_image = Image.open(io.BytesIO(await file.read()))
+    try:
+        # Load user image
+        user_image = Image.open(io.BytesIO(await file.read()))
 
-    # Resize & crop
-    processed_image = resize_and_crop(user_image)
+        # Resize & crop
+        processed_image = resize_and_crop(user_image)
 
-    # Load overlay (replace with actual file paths)
-    overlay_path = f"templates/{overlay}_lines.png"
-    overlay_image = Image.open(overlay_path).convert("RGBA")
+        # Load overlay (replace with actual file paths)
+        overlay_path = f"templates/{overlay}_lines.png"
+        
+        # Check if the overlay file exists
+        if not os.path.exists(overlay_path):
+            raise HTTPException(status_code=404, detail="Overlay template not found")
 
-    # Ensure overlay matches playmat size
-    overlay_image = overlay_image.resize((PLAYMAT_WIDTH, PLAYMAT_HEIGHT), Image.LANCZOS)
+        overlay_image = Image.open(overlay_path).convert("RGBA")
 
-    # Merge images
-    final_image = Image.alpha_composite(processed_image, overlay_image)
+        # Ensure overlay matches playmat size
+        overlay_image = overlay_image.resize((PLAYMAT_WIDTH, PLAYMAT_HEIGHT), Image.LANCZOS)
 
-    # Save the final image
-    output_path = f"{OUTPUT_FOLDER}{uuid.uuid4().hex}.png"
-    final_image.save(output_path, format="PNG")
+        # Merge images
+        final_image = Image.alpha_composite(processed_image, overlay_image)
 
-    print(f"Received overlay: {overlay}")
-    return FileResponse(output_path, filename="playmat.png")
+        # Save the final image
+        output_path = f"{OUTPUT_FOLDER}{uuid.uuid4().hex}.png"
+        final_image.save(output_path, format="PNG")
+
+        return FileResponse(output_path, filename="playmat.png")
+
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+# CORS setup
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],  # Allows all origins, or replace "*" with ["http://localhost:5175"]
@@ -86,6 +90,7 @@ app.add_middleware(
     allow_methods=["*"],  # Allows all HTTP methods (POST, GET, etc.)
     allow_headers=["*"],  # Allows all headers
 )
+
 @app.get("/")
 def home():
     return {"message": "Playmat Builder API is running!"}
