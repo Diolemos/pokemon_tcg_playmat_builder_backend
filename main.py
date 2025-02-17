@@ -76,10 +76,10 @@ async def upload_image(file: UploadFile = File(...), overlay: str = Form("white"
     return FileResponse(output_path, filename="playmat.png")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5174"],  # Adjust this to match your frontend URL
+    allow_origins=["*"],  # Allows all origins, or replace "*" with ["http://localhost:5175"]
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["*"],  # Allows all HTTP methods (POST, GET, etc.)
+    allow_headers=["*"],  # Allows all headers
 )
 @app.get("/")
 def home():
