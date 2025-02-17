@@ -16,9 +16,11 @@ PLAYMAT_HEIGHT = 1400  # 14 inches × 100 DPI
 
 app = FastAPI()
 
+port = int(os.environ.get('PORT', 10000))
+
+# Bind the application to the specified port
 if __name__ == "__main__":
     import uvicorn
-    port = int(os.environ.get('PORT', 8000))  
     uvicorn.run(app, host="0.0.0.0", port=port)
 
 def resize_and_crop(image: Image.Image) -> Image.Image:
