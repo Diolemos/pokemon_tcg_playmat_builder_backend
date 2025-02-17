@@ -14,6 +14,12 @@ os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
 app = FastAPI()
 
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.environ.get('PORT', 8000))  
+    uvicorn.run(app, host="0.0.0.0", port=port)
+
 # Constants for playmat size (assuming 100 DPI)
 PLAYMAT_WIDTH = 2400  # 24 inches × 100 DPI
 PLAYMAT_HEIGHT = 1400  # 14 inches × 100 DPI
