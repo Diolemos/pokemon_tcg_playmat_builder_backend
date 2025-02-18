@@ -1,5 +1,5 @@
 from fastapi import FastAPI, File, UploadFile, Form, HTTPException
-from fastapi.responses import FileResponse
+from fastapi.responses import StreamingResponse
 from PIL import Image, ImageOps
 from fastapi.middleware.cors import CORSMiddleware
 import io
@@ -60,13 +60,13 @@ async def upload_image(file: UploadFile = File(...), overlay: str = Form("white"
         # Resize & crop
         processed_image = resize_and_crop(user_image)
 
-        # Load overlay (replace with actual file paths)
+        
         overlay_path = f"templates/{overlay}_lines.png"
         
         # Check if the overlay file exists
         if not os.path.exists(overlay_path):
             raise HTTPException(status_code=404, detail="Overlay template not found")
-
+        #load overlay
         overlay_image = Image.open(overlay_path).convert("RGBA")
 
         # Ensure overlay matches playmat size
@@ -75,11 +75,14 @@ async def upload_image(file: UploadFile = File(...), overlay: str = Form("white"
         # Merge images
         final_image = Image.alpha_composite(processed_image, overlay_image)
 
-        # Save the final image
-        output_path = f"{OUTPUT_FOLDER}{uuid.uuid4().hex}.png"
-        final_image.save(output_path, format="PNG")
+        img_io = io.BytesIO()
+        final_image.save(img_io, format="PNG")
+        img_io.seek(0)
 
-        return FileResponse(output_path, filename="playmat.png")
+        # Return as a streaming response
+        return StreamingResponse(img_io, media_type="image/png", headers={"Content-Disposition": "inline; filename=playmat.png"})
+
+        
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
