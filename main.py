@@ -3,12 +3,10 @@ from fastapi.responses import StreamingResponse
 from PIL import Image, ImageOps
 from fastapi.middleware.cors import CORSMiddleware
 import io
-import uuid
+
 import os
 
-# Create the output directory if it doesn't exist
-OUTPUT_FOLDER = os.getenv("OUTPUT_FOLDER", "output/")
-os.makedirs(OUTPUT_FOLDER, exist_ok=True)
+
 
 # Constants for playmat size (assuming 100 DPI)
 PLAYMAT_WIDTH = 2400  # 24 inches × 100 DPI
