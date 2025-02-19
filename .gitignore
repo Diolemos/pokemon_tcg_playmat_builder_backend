@@ -34,8 +34,8 @@ pip-log.txt
 pip-delete-this-directory.txt
 
 # Output and generated files
-output/
 *.png
+!templates/*.png
 
 
 node_modules/
